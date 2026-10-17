@@ -1,6 +1,6 @@
 name: Build iOS C++ Cleaner Library
 
-on:
+on: 
   push:
     branches: [ main, master ]
   pull_request:
