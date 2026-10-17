@@ -2,7 +2,7 @@ CXX = clang++
 CXXFLAGS = -std=c++17 -Wall -fPIC -framework Foundation
 LDFLAGS = -lpthread
 
-TARGET = libcleaner.dylib
+TARGET = antiban-eri.dylib
 SRC = Cleaner.mm
 
 all: $(TARGET)
