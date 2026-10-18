@@ -1,92 +1,61 @@
 #import "Cleaner.h"
-#include <dirent.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#import <Foundation/Foundation.h>
+#import <substrate.h>
+#import <mach-o/dyld.h>
+#include <filesystem>
 
-namespace CleanerBackground {
-    std::atomic<bool> g_isRunning{false};
-    std::thread g_backgroundThread;
-}
+namespace fs = std::filesystem;
 
-bool wipeDirectory(const std::string& dirPath) {
-    DIR *dir = opendir(dirPath.c_str());
-    if (!dir) return false;
+// ==========================================
+// HÀM HOOK SHA-256 THẬT (BYPASS INTEGRITY)
+// ==========================================
 
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        std::string name = entry->d_name;
-        if (name == "." || name == "..") continue;
-        
-        std::string fullPath = dirPath + "/" + name;
-        struct stat st;
-        if (stat(fullPath.c_str(), &st) == 0) {
-            if (S_ISDIR(st.st_mode)) {
-                wipeDirectory(fullPath);
-                rmdir(fullPath.c_str());
-            } else {
-                unlink(fullPath.c_str());
-            }
-        }
-    }
-    closedir(dir);
-    LOGI(OBFUSCATE("[GameDataCleaner] ✔️ Đã dọn dẹp thư mục: %s"), dirPath.c_str());
-    return true;
-}
+// Con trỏ lưu hàm kiểm tra integrity gốc
+static bool (*old_checkSHA256Integrity)(void *self, SEL _cmd, ...);
 
-void autoWipeGameData() {
-    // Lấy thư mục Document / Library / Cache trên iOS thông qua Foundation
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *documentsDirectory = [paths firstObject];
-    
-    // Đường dẫn gốc ứng dụng trên iOS thường chứa Documents, Library, tmp
-    NSString *appRoot = [documentsDirectory stringByDeletingLastPathComponent];
-    
-    std::string rootPath([appRoot UTF8String]);
-    std::string cacheDir = rootPath + "/Library/Caches";
-    std::string prefsDir = rootPath + "/Library/Preferences";
-    std::string documentsDir = [documentsDirectory UTF8String];
-
-    LOGI(OBFUSCATE("[GameDataCleaner] 🗑️ Bắt đầu Wipe Data (iOS)..."));
-    wipeDirectory(cacheDir);
-    wipeDirectory(prefsDir);
-    wipeDirectory(documentsDir);
-    LOGI(OBFUSCATE("[GameDataCleaner] ✅ Wipe Data hoàn tất!"));
+// Hàm thay thế (Hook) - luôn trả về true để qua mặt hệ thống kiểm tra
+static bool replacement_checkSHA256Integrity(void *self, SEL _cmd, ...) {
+    NSLog(@"[IPAFixer] 🛡️ Đã intercept hàm kiểm tra SHA-256, ép trả về true (Bypassed)");
+    return true; 
 }
 
 void applySHA256PaddingCheckIfNeeded() {
-    LOGI(OBFUSCATE("[IPAFixer] ⚠️ Đã TẮT/CHẶN kiểm tra tính toàn vẹn SHA-256 (iOS)"));
-}
-
-void startBackgroundCleaner() {
-    using namespace CleanerBackground;
-    if (g_isRunning) {
-        LOGI(OBFUSCATE("[GameDataCleaner] ⚠️ Đã chạy ngầm rồi!"));
-        return;
+    NSLog(@"[IPAFixer] ⚠️ Đang tiến hành hook hàm kiểm tra tính toàn vẹn SHA-256 (iOS)...");
+    
+    // Tìm symbol gốc (thay _CustomSHA256CheckFunction bằng tên hàm thật từ IDA Pro/Ghidra)
+    void *targetSymbol = MSFindSymbol(NULL, "_CustomSHA256CheckFunction");
+    
+    if (targetSymbol) {
+        MSHookFunction(targetSymbol, (void *)replacement_checkSHA256Integrity, (void **)&old_checkSHA256Integrity);
+        NSLog(@"[IPAFixer] ✅ Hook SHA-256 thành công!");
+    } else {
+        NSLog(@"[IPAFixer] ❌ Không tìm thấy symbol SHA-256 cần hook!");
     }
-
-    g_isRunning = true;
-    LOGI(OBFUSCATE("[GameDataCleaner] 🔄 Bắt đầu chạy ngầm liên tục (iOS)..."));
-
-    g_backgroundThread = std::thread([]() {
-        while (g_isRunning) {
-            autoWipeGameData();
-            applySHA256PaddingCheckIfNeeded();
-            
-            for (int i = 0; i < CHECK_INTERVAL_SEC && g_isRunning; ++i) {
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
-        }
-        LOGI(OBFUSCATE("[GameDataCleaner] ⏹️ Đã dừng chạy ngầm"));
-    });
 }
 
-void stopBackgroundCleaner() {
-    using namespace CleanerBackground;
-    
-    if (!g_isRunning) return;
-    
-    g_isRunning = false;
-    if (g_backgroundThread.joinable()) {
-        g_backgroundThread.join();
+// ==========================================
+// HÀM XÓA CACHE
+// ==========================================
+
+// CHỈ xóa cache — KHÔNG xóa Documents/Preferences
+void cleanCacheOnly() {
+    @autoreleasepool {
+        // Kích hoạt luôn việc bypass SHA-256 khi tiến hành thao tác
+        applySHA256PaddingCheckIfNeeded();
+
+        NSArray *urls = [[NSFileManager defaultManager]
+            URLsForDirectory:NSCachesDirectory
+            inDomains:NSUserDomainMask];
+        if (urls.count == 0) return;
+        
+        NSURL *cacheURL = urls.firstObject;
+        NSError *err = nil;
+        [[NSFileManager defaultManager] removeItemAtURL:cacheURL error:&err];
+        if (err) {
+            NSLog(@"[Cleaner] Cache clean failed: %@", err);
+        } else {
+            [[NSFileManager defaultManager] createDirectoryAtURL:cacheURL
+                withIntermediateDirectories:YES attributes:nil error:nil];
+        }
     }
 }
