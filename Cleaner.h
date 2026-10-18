@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-// Hàm xóa cache và kích hoạt bảo vệ
+// Khai báo các hàm C interface dùng chung
 void cleanCacheOnly();
 void applySHA256PaddingCheckIfNeeded();
 
@@ -15,9 +15,9 @@ void applySHA256PaddingCheckIfNeeded();
 }
 #endif
 
-// Interface lớp bảo vệ toàn diện (Anti-Ban / Anti-Cheat / Anti-Report)
-@interface UniversalShield : NSObject
-+ (void)activateAllProtections;
+// Khai báo Interface lớp bảo vệ an toàn (Production Shield)
+@interface ProductionShield : NSObject
++ (void)applySafeProtections;
 @end
 
 #endif // CLEANER_H
