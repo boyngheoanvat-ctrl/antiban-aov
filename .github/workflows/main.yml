@@ -25,6 +25,10 @@ jobs:
         fi
         sudo chown -R $USER /opt/theos
 
+    - name: Install Dependencies (ldid)
+      run: |
+        brew install ldid
+
     - name: Run Make Compilation
       run: |
         make
