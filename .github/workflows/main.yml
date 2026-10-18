@@ -25,7 +25,7 @@ jobs:
         make
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: antiban-eri-dylib
         path: .theos/obj/*.dylib
