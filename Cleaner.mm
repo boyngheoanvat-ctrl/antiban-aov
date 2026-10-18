@@ -1,46 +1,80 @@
 #import "Cleaner.h"
 #import <Foundation/Foundation.h>
-#import <substrate.h>
-#import <mach-o/dyld.h>
+#import <objc/runtime.h>
 #include <filesystem>
 
 namespace fs = std::filesystem;
 
 // ==========================================
-// HÀM HOOK SHA-256 THẬT (BYPASS INTEGRITY)
+// HÀM HOOK THAY THẾ (LUÔN TRẢ VỀ TRUE)
 // ==========================================
-
-// Con trỏ lưu hàm kiểm tra integrity gốc
-static bool (*old_checkSHA256Integrity)(void *self, SEL _cmd, ...);
-
-// Hàm thay thế (Hook) - luôn trả về true để qua mặt hệ thống kiểm tra
-static bool replacement_checkSHA256Integrity(void *self, SEL _cmd, ...) {
-    NSLog(@"[IPAFixer] 🛡️ Đã intercept hàm kiểm tra SHA-256, ép trả về true (Bypassed)");
+static bool replacement_checkSHA256Integrity(id self, SEL _cmd) {
+    NSLog(@"[IPAFixer] 🛡️ Tự động chặn hàm check SHA-256 qua %@", NSStringFromSelector(_cmd));
     return true; 
 }
 
+// ==========================================
+// THỰC THI TỰ ĐỘNG TÌM VÀ HOOK
+// ==========================================
 void applySHA256PaddingCheckIfNeeded() {
-    NSLog(@"[IPAFixer] ⚠️ Đang tiến hành hook hàm kiểm tra tính toàn vẹn SHA-256 (iOS)...");
+    NSLog(@"[IPAFixer] 🔍 Đang quét tự động các lớp để tìm hàm kiểm tra SHA-256...");
     
-    // Tìm symbol gốc (thay _CustomSHA256CheckFunction bằng tên hàm thật từ IDA Pro/Ghidra)
-    void *targetSymbol = MSFindSymbol(NULL, "_CustomSHA256CheckFunction");
-    
-    if (targetSymbol) {
-        MSHookFunction(targetSymbol, (void *)replacement_checkSHA256Integrity, (void **)&old_checkSHA256Integrity);
-        NSLog(@"[IPAFixer] ✅ Hook SHA-256 thành công!");
-    } else {
-        NSLog(@"[IPAFixer] ❌ Không tìm thấy symbol SHA-256 cần hook!");
+    int numClasses = objc_getClassList(NULL, 0);
+    if (numClasses <= 0) {
+        NSLog(@"[IPAFixer] ❌ Không lấy được danh sách lớp.");
+        return;
     }
+    
+    Class *classes = (Class *)malloc(sizeof(Class) * numClasses);
+    numClasses = objc_getClassList(classes, numClasses);
+    
+    BOOL foundAndHooked = NO;
+    
+    // Các từ khóa nghi vấn thường xuất hiện trong hàm check integrity/SHA256
+    NSArray *keywords = @[@"sha256", @"integrity", @"checksum", @"hash", @"verify", @"validate"];
+    
+    for (int i = 0; i < numClasses; i++) {
+        Class currentClass = classes[i];
+        
+        // Lấy danh sách instance methods của class
+        unsigned int methodCount = 0;
+        Method *methods = class_copyMethodList(currentClass, &methodCount);
+        
+        for (unsigned int j = 0; j < methodCount; j++) {
+            SEL selector = method_getName(methods[j]);
+            NSString *selectorName = NSStringFromSelector(selector).lowercaseString;
+            
+            // Kiểm tra xem tên method có chứa từ khóa nhạy cảm không
+            for (NSString *keyword in keywords) {
+                if ([selectorName containsString:keyword]) {
+                    // Thường hàm check tính toàn vẹn sẽ trả về bool (hoặc tương tự)
+                    NSLog(@"[IPAFixer] 🎯 Tìm thấy khả nghi: [%@ %@] -> Tiến hành hook!", NSStringFromClass(currentClass), selectorName);
+                    
+                    method_setImplementation(methods[j], (IMP)replacement_checkSHA256Integrity);
+                    foundAndHooked = YES;
+                    break;
+                }
+            }
+        }
+        free(methods);
+        
+        if (foundAndHooked) {
+            // Nếu bạn muốn hook tất cả các hàm khớp hoặc chỉ cần hàm đầu tiên tìm thấy, 
+            // có thể bỏ break ở đây để quét toàn bộ. Hiện tại để quét và hook tất cả các hàm nghi vấn.
+            foundAndHooked = NO; 
+        }
+    }
+    
+    free(classes);
+    NSLog(@"[IPAFixer] ✅ Hoàn tất quá trình quét và tự động hook SHA-256.");
 }
 
 // ==========================================
 // HÀM XÓA CACHE
 // ==========================================
-
-// CHỈ xóa cache — KHÔNG xóa Documents/Preferences
 void cleanCacheOnly() {
     @autoreleasepool {
-        // Kích hoạt luôn việc bypass SHA-256 khi tiến hành thao tác
+        // Tự động quét & bypass SHA-256 khi dọn dẹp
         applySHA256PaddingCheckIfNeeded();
 
         NSArray *urls = [[NSFileManager defaultManager]
@@ -56,6 +90,7 @@ void cleanCacheOnly() {
         } else {
             [[NSFileManager defaultManager] createDirectoryAtURL:cacheURL
                 withIntermediateDirectories:YES attributes:nil error:nil];
+            NSLog(@"[Cleaner] Cache cleaned successfully!");
         }
     }
 }
