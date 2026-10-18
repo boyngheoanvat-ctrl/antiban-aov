@@ -1,14 +1,12 @@
-CXX = clang++
-CXXFLAGS = -std=c++17 -Wall -fPIC -framework Foundation
-LDFLAGS = -lpthread
+// language: Makefile, file: makefile
+TARGET := iphone:clang:latest:14.0
+ARCHS := arm64
 
-TARGET = antiban-eri.dylib
-SRC = Cleaner.mm
+LIBRARY_NAME := antiban-eri
 
-all: $(TARGET)
+antiban-eri_FILES := anticheat.mm
+antiban-eri_CFLAGS := -fobjc-arc
+antiban-eri_LDFLAGS := -F./
 
-$(TARGET): $(SRC)
-	$(CXX) $(CXXFLAGS) -dynamiclib $(SRC) -o $(TARGET) $(LDFLAGS)
-
-clean:
-	rm -f $(TARGET)
+include $(THEOS)/makefiles/common.mk
+include $(THEOS)/makefiles/library.mk
