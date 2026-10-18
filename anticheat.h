@@ -1,7 +1,7 @@
 // language: Objective-C, file: file.h, target: iOS ARM64
 #import <Foundation/Foundation.h>
 
-@interface TelemetryInterceptor : NSObject
+@interface AntibanEriManager : NSObject
 + (instancetype)sharedInstance;
-- (void)initializeHooks;
+- (void)startInjection;
 @end
