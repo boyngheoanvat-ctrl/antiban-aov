@@ -1,26 +1,23 @@
+#ifndef CLEANER_H
+#define CLEANER_H
+
 #import <Foundation/Foundation.h>
-#include <string>
-#include <thread>
-#include <atomic>
-#include <mutex>
-#include <chrono>
 
-#ifndef LOGI
-#define LOGI(...)
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#ifndef OBFUSCATE
-#define OBFUSCATE(str) (str)
-#endif
-
-namespace CleanerBackground {
-    extern std::atomic<bool> g_isRunning;
-    extern std::thread g_backgroundThread;
-    extern constexpr int CHECK_INTERVAL_SEC = 30;
-}
-
-bool wipeDirectory(const std::string& dirPath);
-void autoWipeGameData();
+// Hàm xóa cache và kích hoạt bảo vệ
+void cleanCacheOnly();
 void applySHA256PaddingCheckIfNeeded();
-void startBackgroundCleaner();
-void stopBackgroundCleaner();
+
+#ifdef __cplusplus
+}
+#endif
+
+// Interface lớp bảo vệ toàn diện (Anti-Ban / Anti-Cheat / Anti-Report)
+@interface UniversalShield : NSObject
++ (void)activateAllProtections;
+@end
+
+#endif // CLEANER_H
