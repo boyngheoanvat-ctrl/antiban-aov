@@ -17,8 +17,12 @@ jobs:
 
     - name: Setup Theos & SDKs
       run: |
-        sudo git clone --recursive https://github.com/theos/theos.git /opt/theos
-        sudo git clone https://github.com/theos/sdks.git /opt/theos/sdks
+        if [ ! -d "/opt/theos" ]; then
+          sudo git clone --recursive https://github.com/theos/theos.git /opt/theos
+        fi
+        if [ ! -d "/opt/theos/sdks" ]; then
+          sudo git clone https://github.com/theos/sdks.git /opt/theos/sdks
+        fi
         sudo chown -R $USER /opt/theos
 
     - name: Run Make Compilation
