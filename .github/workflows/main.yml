@@ -33,8 +33,13 @@ jobs:
       run: |
         make
 
+    - name: Prepare Artifact
+      run: |
+        mkdir -p build_output
+        find .theos/obj -name "*.dylib" -exec cp {} build_output/ \;
+
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: antiban-eri-dylib
-        path: .theos/obj/*.dylib
+        path: build_output/*.dylib
