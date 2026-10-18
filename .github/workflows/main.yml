@@ -1,3 +1,4 @@
+# language: YAML, file: .github/workflows/build.yml
 name: Build iOS Dylib
 
 on:
@@ -14,12 +15,17 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Setup Theos
+    - name: Setup Theos & SDKs
       run: |
         git clone --recursive https://github.com/theos/theos.git /opt/theos
-        # Cài đặt iOS SDK cần thiết nếu chưa có sẵn
-        sudo git clone https://github.com/theos/sdks.git /opt/theos/sdks
+        git clone https://github.com/theos/sdks.git /opt/theos/sdks
 
-    - name: Run Make
+    - name: Run Make Compilation
       run: |
         make
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: antiban-eri-dylib
+        path: .theos/obj/*.dylib
