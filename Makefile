@@ -1,4 +1,4 @@
-// language: Makefile, file: makefile
+# language: Makefile, file: makefile
 TARGET := iphone:clang:latest:14.0
 ARCHS := arm64
 
