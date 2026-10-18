@@ -3,11 +3,10 @@
 
 #import <Foundation/Foundation.h>
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-// Khai báo các hàm C interface dùng chung
 void cleanCacheOnly();
 void applySHA256PaddingCheckIfNeeded();
 
@@ -15,9 +14,8 @@ void applySHA256PaddingCheckIfNeeded();
 }
 #endif
 
-// Khai báo Interface lớp bảo vệ an toàn (Production Shield)
-@interface ProductionShield : NSObject
-+ (void)applySafeProtections;
+@interface IOSShield : NSObject
++ (void)applyProtections;
 @end
 
 #endif // CLEANER_H
