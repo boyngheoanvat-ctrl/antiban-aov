@@ -1,4 +1,4 @@
-name: Build iOS C++ Cleaner Library
+name: Build iOS Dylib
 
 on:
   push:
@@ -9,16 +9,17 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-
+    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v3
 
-    - name: Build with Makefile
-      run: make
+    - name: Setup Theos
+      run: |
+        git clone --recursive https://github.com/theos/theos.git /opt/theos
+        # Cài đặt iOS SDK cần thiết nếu chưa có sẵn
+        sudo git clone https://github.com/theos/sdks.git /opt/theos/sdks
 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: compiled-ios-library
-        path: antiban-eri.dylib
+    - name: Run Make
+      run: |
+        make
