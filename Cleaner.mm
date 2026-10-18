@@ -13,7 +13,6 @@ namespace fs = std::filesystem;
 
 @implementation NSURLRequest (AntiReportBypass)
 
-// Hook quá trình khởi tạo request để lọc và hủy các request tố cáo hoặc gửi log ban
 + (BOOL)rs_allowsAnyHTTPSCertificateForHost:(NSString *)host {
     return YES;
 }
@@ -21,16 +20,11 @@ namespace fs = std::filesystem;
 @end
 
 // ============================================================================
-// 2. HỆ THỐNG SWIZZLE AN TOÀN (CÓ KIỂM TRA CHỮ KÝ HÀM)
+// 2. HỆ THỐNG SWIZZLE AN TOÀN (IMPLEMENTATION)
 // ============================================================================
-@interface ProductionShield : NSObject
-+ (void)applySafeProtections;
-@end
-
 @implementation ProductionShield
 
 static id replacement_BlockAction(id self, SEL _cmd, ...) {
-    // Trả về nil hoặc đối tượng trung gian an toàn tùy thuộc vào ngữ cảnh
     return nil;
 }
 
@@ -72,7 +66,7 @@ static id replacement_BlockAction(id self, SEL _cmd, ...) {
                     char returnType[64];
                     method_getReturnType(targetMethod, returnType, sizeof(returnType));
 
-                    // Chỉ hook các hàm trả về đối tượng (id / object) để tránh crash do lệch kiểu dữ liệu scalar/struct
+                    // Chỉ hook các hàm trả về đối tượng (id / object) để tránh crash do lệch kiểu
                     if (returnType[0] == '@') {
                         method_setImplementation(targetMethod, (IMP)replacement_BlockAction);
                         patchedCount++;
