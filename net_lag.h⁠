@@ -1,0 +1,26 @@
+// language: C++, file: net_lag.h, target: Windows/Linux, MSVC/GCC
+#ifndef NET_LAG_H
+#define NET_LAG_H
+
+#if defined(_WIN32)
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#define SOCKET int
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
+#endif
+
+#include <chrono>
+#include <thread>
+
+namespace NetLag {
+    bool ApplySocketTimeout(SOCKET sock, int timeout_ms);
+    int ThrottledSend(SOCKET sock, const char* buf, int len, int flags, int delay_ms);
+}
+
+#endif // NET_LAG_H
