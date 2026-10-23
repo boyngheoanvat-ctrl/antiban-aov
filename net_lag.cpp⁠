@@ -1,0 +1,33 @@
+// language: C++, file: net_lag.cpp, target: Windows/Linux, MSVC/GCC
+#include "net_lag.h"
+#include <iostream>
+
+namespace NetLag {
+    bool ApplySocketTimeout(SOCKET sock, int timeout_ms) {
+        if (sock == INVALID_SOCKET) return false;
+#if defined(_WIN32)
+        DWORD timeout = static_cast<DWORD>(timeout_ms);
+        int res_send = setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+        int res_recv = setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+        return (res_send != SOCKET_ERROR && res_recv != SOCKET_ERROR);
+#else
+        timeval tv;
+        tv.tv_sec = timeout_ms / 1000;
+        tv.tv_usec = (timeout_ms % 1000) * 1000;
+        int res_send = setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+        int res_recv = setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+        return (res_send != SOCKET_ERROR && res_recv != SOCKET_ERROR);
+#endif
+    }
+
+    int ThrottledSend(SOCKET sock, const char* buf, int len, int flags, int delay_ms) {
+        if (delay_ms > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+        }
+#if defined(_WIN32)
+        return send(sock, buf, len, flags);
+#else
+        return send(sock, buf, len, flags);
+#endif
+    }
+}
