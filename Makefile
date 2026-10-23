@@ -1,18 +1,11 @@
-CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -pthread
-TARGET = net_lag_demo
-SRC = net_lag.cpp main.cpp
+# language: makefile, file: Makefile, target: iOS / Theos
+TARGET := iphone:clang:latest:13.0
+ARCHS = arm64 arm64e
 
-ifeq ($(OS),Windows_NT)
-    LIBS = -lws2_32
-else
-    LIBS = 
-endif
+TWEAK_NAME = Hacklag
 
-all: $(TARGET)
+AntiBanEri_FILES = Tweak.xm
+AntiBanEri_CFLAGS = -fobjc-arc
 
-$(TARGET): $(SRC)
-	$(CXX) $(CXXFLAGS) $(SRC) -o $(TARGET) $(LIBS)
-
-clean:
-	rm -f $(TARGET)
+include $(THEOS)/makefiles/common.mk
+include $(THEOS_MAKE_PATH)/tweak.mk
