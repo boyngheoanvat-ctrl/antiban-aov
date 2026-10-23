@@ -1,14 +1,18 @@
-# language: Makefile, file: makefile
-THEOS ?= /opt/theos
-include $(THEOS)/makefiles/common.mk
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -Wextra -pthread
+TARGET = net_lag_demo
+SRC = net_lag.cpp main.cpp
 
-TARGET := iphone:clang:latest:14.0
-ARCHS := arm64
+ifeq ($(OS),Windows_NT)
+    LIBS = -lws2_32
+else
+    LIBS = 
+endif
 
-LIBRARY_NAME := antiban-eri
+all: $(TARGET)
 
-antiban-eri_FILES := anticheat.mm
-antiban-eri_CFLAGS := -fobjc-arc
-antiban-eri_LDFLAGS := -F./
+$(TARGET): $(SRC)
+	$(CXX) $(CXXFLAGS) $(SRC) -o $(TARGET) $(LIBS)
 
-include $(THEOS)/makefiles/library.mk
+clean:
+	rm -f $(TARGET)
